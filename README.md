@@ -184,3 +184,56 @@ This project is licensed under the [Apache License, Version 2.0](LICENSE).
 
 [mcp]: https://modelcontextprotocol.io/
 [service-account]: https://grafana.com/docs/grafana/latest/administration/service-accounts/
+
+## Via Nix
+
+To check it builds, run:
+
+```bash
+nix run
+```
+
+To debug with MCP inspector, run:
+
+```bash
+nix develop
+mcp-inspector
+```
+
+Then go to the MCP inspector url and add the environment variables GRAFANA_URL
+and GRAFANA_API_KEY.
+
+And to integrate with your nix config you can generate the
+`claude_desktop_config.json` file like this:
+
+```nix
+{ config, inputs, pkgs, ... }:
+let
+  mcp-grafana = pkgs.writeShellScript "mcp-grafana" ''
+    export PATH="${pkgs.nix}/bin:$PATH"
+    export GRAFANA_URL="https://grafana.end.point"
+    export GRAFANA_API_KEY="$(cat ${config.homeage.file.grafana-service-account-token-mcp.path})"
+    exec ${pkgs.nix}/bin/nix run github:sh54/mcp-grafana/flake "$@"
+    # or to use local version:
+    # exec ${pkgs.nix}/bin/nix run "/path/to/src/mcp-grafana" "$@"
+  '';
+in {
+  homeage.file."grafana-service-account-token-mcp" = {
+    source = ../../../../secrets/grafana--service-account-token--mcp.age;
+  };
+
+  home.file."Library/Application Support/Claude/claude_desktop_config.json" = {
+    text = builtins.toJSON {
+      mcpServers = {
+        grafana = {
+          command = mcp-grafana;
+          args = [];
+        };
+      };
+    };
+  };
+}
+```
+
+This example uses agenix and homeage for secrets management and takes control
+over the config file for macOS.
