@@ -193,6 +193,12 @@ To check it builds, run:
 nix run
 ```
 
+To update dependencies and so generate a new gomod2nix.toml file run:
+
+```bash
+gomod2nix
+```
+
 To debug with MCP inspector, run:
 
 ```bash
