@@ -49,13 +49,33 @@
       };
     });
 
-    packages = forEachSystem (system: {
-      default = pkgsFor.${system}.buildGoApplication {
+    packages = forEachSystem (system: let
+      pkgs = pkgsFor.${system};
+      app = pkgs.buildGoApplication {
         pname = "mcp-grafana";
         version = "0.1.0";
         pwd = ./.;
         src = ./.;
         modules = ./gomod2nix.toml;
+      };
+    in {
+      default = app;
+      # On macOS do this to build:
+      # `nix build --builders 'linux-builder aarch64-linux /etc/nix/builder_ed25519' .#packages.aarch64-linux.image`
+      # When built then run `podman load < result`
+      # then `podman run --rm localhost/mcp-grafana:latest`
+      image = pkgs.dockerTools.buildLayeredImage {
+        name = "mcp-grafana";
+        tag = "latest";
+        contents = [
+          app
+          pkgs.bash
+          pkgs.coreutils
+        ];
+        config = {
+          Entrypoint = ["${app}/bin/mcp-grafana"];
+          Cmd = [];
+        };
       };
     });
 
