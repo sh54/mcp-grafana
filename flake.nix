@@ -71,6 +71,8 @@
           app
           pkgs.bash
           pkgs.coreutils
+          pkgs.cacert
+          pkgs.curl
         ];
         config = {
           Entrypoint = ["${app}/bin/mcp-grafana"];
